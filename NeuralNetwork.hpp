@@ -28,14 +28,17 @@ public:
     const Genome& get_genome() const { return genome; }
 
     std::vector<float> feed_forwards(const std::vector<float>& inputs) {
+        // Always hand back one value per output so callers can index safely.
+        std::vector<float> outputs(input.output_nodes, 0.0f);
+
         if (inputs.size() != input.input_nodes) {
             std::cerr << "[ERROR]";
-            return {};
+            return outputs;
         }
 
         if (genome.weights.size() != input.get_required_weights_count()) {
             std::cerr << "[ERROR]";
-            return {};
+            return outputs;
         }
 
         size_t weight_idx = 0;
@@ -53,7 +56,6 @@ public:
         }
 
         // Hidden layer -> output layer
-        std::vector<float> outputs(input.output_nodes, 0.0f);
 
         for (size_t k = 0; k < input.output_nodes; ++k) {
             float sum = 0.0f;

@@ -4,6 +4,8 @@
 #include <random>
 #include <iostream>
 #include <numeric>
+#include <cmath>
+#include "Vec2.hpp"
 #include "Food.hpp"
 #include "Agent.hpp"
 
@@ -40,14 +42,14 @@ public:
         foods.resize(food_amount);
         for (auto& food : foods) {
             food.is_eaten = true;
-            food.respawn(map);
+            food.respawn(map, rng);
         }
 
         agents.clear();
         size_t weights_count = config.get_required_weights_count();
 
         for (size_t i = 0; i < pop_size; ++i) {
-            Genome random_genome = Genome::create_random(weights_count);
+            Genome random_genome = Genome::create_random(weights_count, rng);
             Agent new_agent(config, random_genome);
             new_agent.reset(get_random_position());
             agents.push_back(new_agent);
@@ -79,11 +81,16 @@ public:
                 if (closest_food != nullptr) {
                     agent.update(dt, closest_food->pos, map);
 
+                    // Eat from the position after the move, including map clamping.
+                    float delta_x = agent.pos_value().x - closest_food->pos.x;
+                    float delta_y = agent.pos_value().y - closest_food->pos.y;
+                    min_dist = std::sqrt(delta_x * delta_x + delta_y * delta_y);
+
                     if (min_dist < agent.radius_value() + closest_food->col_r) {
                         agent.add_energy(60.0f);
                         agent.add_fitness(20.0f);
                         closest_food->is_eaten = true;
-                        closest_food->respawn(map);
+                        closest_food->respawn(map, rng);
                     }
                 }
             }
@@ -126,10 +133,11 @@ public:
 
             Genome child_genome = Genome::crossover(
                 agents[parent_a_idx].get_genome(),
-                agents[parent_b_idx].get_genome()
+                agents[parent_b_idx].get_genome(),
+                rng
             );
 
-            child_genome.mutate(mutation_rate, mutation_strength);
+            child_genome.mutate(mutation_rate, mutation_strength, rng);
 
             Agent child(config, child_genome);
             child.reset(get_random_position());

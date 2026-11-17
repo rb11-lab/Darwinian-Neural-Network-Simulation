@@ -29,15 +29,6 @@ int main() {
     const float dt = 0.016f;
 
     while (!WindowShouldClose()) {
-        world.step(dt);
-        step_counter++;
-
-        if (step_counter >= steps_per_generation) {
-            world.next_generation();
-            step_counter = 0;
-            current_gen++;
-        }
-
         // Toggle simulation speed with SPACE (1x -> 10x -> 50x -> 1x)
         if (IsKeyPressed(KEY_SPACE)) {
             if (simulation_speed == 1) simulation_speed = 10;
@@ -45,7 +36,7 @@ int main() {
             else simulation_speed = 1;
         }
 
-        // Run the simulation logic several times per frame
+        // Speed N runs exactly N steps this frame.
         for (int sub_step = 0; sub_step < simulation_speed; ++sub_step) {
             world.step(dt);
             step_counter++;

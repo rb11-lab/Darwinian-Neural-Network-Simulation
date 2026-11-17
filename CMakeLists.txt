@@ -15,3 +15,9 @@ FetchContent_MakeAvailable(raylib)
 
 add_executable(darwinian_sim main.cpp)
 target_link_libraries(darwinian_sim PRIVATE raylib)
+
+if(MSVC)
+    target_compile_options(darwinian_sim PRIVATE /W4)
+else()
+    target_compile_options(darwinian_sim PRIVATE -Wall -Wextra)
+endif()

@@ -1,9 +1,9 @@
 #pragma once
 #include <algorithm>
 #include <vector>
-#include <random>
 #include "NeuralNetwork.hpp"
-#include "Food.hpp"
+#include "Vec2.hpp"
+#include "Map.hpp"
 
 class Agent
 {
@@ -43,7 +43,7 @@ public:
     Agent(const InputManager& config, const Genome& g)
         : brain(config, g) {}
 
-    std::vector<float> get_inputs(const Vec2& posF, const Map& map) {
+    std::vector<float> get_inputs(const Vec2& posF, [[maybe_unused]] const Map& map) {
         float delta_x = posF.x - pos.x;
         float delta_y = posF.y - pos.y;
         float dis_to_food = sqrtf(delta_x * delta_x + delta_y * delta_y);
@@ -72,11 +72,14 @@ public:
 
         inputs = get_inputs(closest_food_pos, map);
         std::vector<float> outputs = brain.feed_forwards(inputs);
+        // Missing outputs stay at zero so a short network result cannot be indexed.
+        float forward = outputs.size() > 0 ? outputs[0] : 0.0f;
+        float turn = outputs.size() > 1 ? outputs[1] : 0.0f;
 
-        turn_degree += outputs[1] * max_turn_speed * dt;
+        turn_degree += turn * max_turn_speed * dt;
 
-        pos.x += std::cos(turn_degree) * outputs[0] * max_speed * dt;
-        pos.y += std::sin(turn_degree) * outputs[0] * max_speed * dt;
+        pos.x += std::cos(turn_degree) * forward * max_speed * dt;
+        pos.y += std::sin(turn_degree) * forward * max_speed * dt;
 
         // Distance after the step
         float new_dx = closest_food_pos.x - pos.x;
@@ -93,11 +96,11 @@ public:
         }
 
         // Penalty for steering
-        fitness -= std::abs(outputs[1]) * 0.001f;
+        fitness -= std::abs(turn) * 0.001f;
         if (fitness < 0.0f) fitness = 0.0f;
 
         // The slower the agent moves, the more relative energy it wastes on turning
-        energy -= (2.0f + std::abs(outputs[1]) * 2.0f + (1.0f - outputs[0]) * 1.5f) * dt;
+        energy -= (2.0f + std::abs(turn) * 2.0f + (1.0f - forward) * 1.5f) * dt;
 
         if (energy <= 0.0f) is_alive = false;
 
